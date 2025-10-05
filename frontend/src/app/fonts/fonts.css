@@ -1,0 +1,84 @@
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./Fonts/montserat/Montserrat-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./Fonts/montserat/Montserrat-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --font-montserrat-medium: 'Montserrat', Arial, sans-serif;
+  --font-montserrat-regular: 'Montserrat', Arial, sans-serif;
+}
+
+.montserrat-medium {
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+}
+.montserrat-regular {
+  font-family: 'Montserrat', Arial, sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+}
+/* Custom font-face for Montserrat */
+
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./Fonts/montserat/Montserrat-ExtraBold.otf') format('opentype'),
+       url('./Fonts/montserat/Montserrat-Bold.ttf') format('truetype'),
+       url('./Fonts/montserat/Montserrat-Italic.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Montserrat';
+  src: url('./Fonts/montserat/Montserrat-ExtraBoldItalic.otf') format('opentype');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Custom font-face for Avenir */
+@font-face {
+  font-family: 'Avenir';
+  src: url('./Fonts/avenir/Avenir-HeavyOblique.ttf') format('truetype'),
+       url('./Fonts/avenir/Avenir-BlackOblique.ttf') format('truetype'),
+       url('./Fonts/avenir/Avenir-BookOblique.ttf') format('truetype'),
+       url('./Fonts/avenir/Avenir-Oblique.ttf') format('truetype'),
+       url('./Fonts/avenir/Avenir-Roman.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+@font-face {
+  font-family: 'Avenir';
+  src: url('./Fonts/avenir/Avenir-Book.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-montserrat: 'Montserrat', Arial, sans-serif;
+  --font-avenir: 'Avenir', Arial, sans-serif;
+}
+
+body {
+  background: #fff !important;
+}
+
+.avenir-title {
+  font-family: 'Avenir', Arial, sans-serif;
+  font-weight: 400;
+  font-size: 45px;
+}
