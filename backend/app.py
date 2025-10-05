@@ -3,6 +3,7 @@ from fastapi import FastAPI
 import json
 import os
 import httpx
+import time
 
 app = FastAPI()
 
@@ -11,14 +12,27 @@ def load_products():
         products = json.load(f)
     return products
 
+cached_gold_price = None
+cache_time = 0
+CACHE_TTL = 10 #10 seconds to test ttl
+
 async def get_gold_price():
+    global cached_gold_price, cache_time
+    now = time.time()
     api_key = os.getenv("GOLD_API_KEY")
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://www.goldapi.io/api/XAU/USD", headers={"x-access-token": api_key})
-        response.raise_for_status()
-        data = response.json()
-        price = data['price_gram_24k']
-    return price
+    print(cached_gold_price)
+    #if there isn't a cached value or the cached value is older tham the ttl
+    if cached_gold_price is None or now - cache_time > CACHE_TTL:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("https://www.goldapi.io/api/XAU/USD", headers={"x-access-token": api_key})
+            response.raise_for_status()
+            data = response.json()
+            cached_gold_price = data['price_gram_24k']
+            #update the cache time
+            cache_time = now
+    # if the condition is met returns the new price if not
+    # returns the already cached price
+    return cached_gold_price
 
 def product_price(popularity_score: float, weight, gold_price) -> float:
     price = (popularity_score + 1) * weight * gold_price
