@@ -52,8 +52,33 @@ def product_price(popularity_score: float, weight, gold_price) -> float:
     price = (popularity_score + 1) * weight * gold_price
     return price
 
+def filter_products(
+        products, 
+        min_popularity: Union[float, int, None] = None, 
+        max_popularity: Union[float, int, None] = None,
+        min_price: Union[float, int, None] = None,
+        max_price: Union[float, int, None] = None,
+        ):
+    filtered = []
+    for product in products:
+        if min_popularity is not None and product['popularityScore'] < min_popularity:
+            continue
+        if max_popularity is not None and product['popularityScore'] > max_popularity:
+            continue
+        if min_price is not None and product['price'] < min_price:
+            continue
+        if max_price is not None and product['price'] > max_price:
+            continue
+        filtered.append(product)
+    return filtered
+
 @app.get("/products")
-async def get_products():
+async def get_products(
+    min_popularity: Union[float, int, None] = None, 
+    max_popularity: Union[float, int, None] = None,
+    min_price: Union[float, int, None] = None,
+    max_price: Union[float, int, None] = None,
+):
     try:
         products = await asyncio.to_thread(load_products) # offloads the io operation to a new thread to not block the event loop
     except Exception as e:
@@ -75,4 +100,4 @@ async def get_products():
             products_output.append(product)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing products: {str(e)}")
-    return products_output
+    return filter_products(products_output, min_popularity, max_popularity, min_price, max_price)
