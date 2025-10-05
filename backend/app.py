@@ -4,6 +4,7 @@ import json
 import os
 import httpx
 import time
+import asyncio
 
 app = FastAPI()
 
@@ -20,7 +21,6 @@ async def get_gold_price():
     global cached_gold_price, cache_time
     now = time.time()
     api_key = os.getenv("GOLD_API_KEY")
-    print(cached_gold_price)
     #if there isn't a cached value or the cached value is older tham the ttl
     if cached_gold_price is None or now - cache_time > CACHE_TTL:
         async with httpx.AsyncClient() as client:
@@ -40,7 +40,7 @@ def product_price(popularity_score: float, weight, gold_price) -> float:
 
 @app.get("/products")
 async def read_root():
-    products = load_products()
+    products = await asyncio.to_thread(load_products) # offloads the io operation to a new thread to not block the event loop
     gold_price = await get_gold_price()
     products_output = []
     for product in products:
