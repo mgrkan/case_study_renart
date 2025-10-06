@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 
 interface Product {
   name: string;
@@ -83,8 +82,6 @@ export default function Home() {
       scrollRef.current.scrollLeft = 0;
     }
   }, [products]);
-
-  // ...existing code...
 
   // Scroll by 1 card width (plus gap)
   const CARD_WIDTH = 260; // image+text+margin
@@ -235,13 +232,17 @@ export default function Home() {
                   style={{ userSelect: "none" }}
                 >
                   <div className="w-full">
-                    <Image
+                    <img
                       src={product.images[(color[idx] || "yellow") as ColorKey]}
                       alt={product.name}
-                      width={400}
-                      height={400}
-                      className="rounded-[14px] sm:rounded-[18px] object-cover border border-gray-200 select-none w-full h-auto"
-                      style={{ marginBottom: 12, userSelect: "none" }}
+                      style={{
+                        width: "100%",
+                        height: "auto",
+                        marginBottom: "12px",
+                        userSelect: "none",
+                        borderRadius: "14px",
+                        border: "1px solid #ccc"
+                      }}
                       draggable={false}
                     />
                   </div>
