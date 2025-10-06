@@ -6,8 +6,6 @@ services:
     env_file: 
       - ./backend/.env
     restart: unless-stopped
-    volumes:
-      - ./backend/products.json:/app/products.json:ro
     ports:
       - "8000:8000"
     healthcheck:

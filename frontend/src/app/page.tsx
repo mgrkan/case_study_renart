@@ -70,7 +70,8 @@ export default function Home() {
   // Fetch products on filter change
   useEffect(() => {
     setLoading(true);
-    fetch(`http://127.0.0.1:8000/products${buildQuery()}`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://backend-production-b1c8.up.railway.app";
+    fetch(`${apiUrl}/products${buildQuery()}`)
       .then((res) => res.json())
       .then((data) => setProducts(data))
       .finally(() => setLoading(false));
