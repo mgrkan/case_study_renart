@@ -1,39 +1,112 @@
 from typing import Union
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import json
 import os
 import httpx
+import time
+import asyncio
+
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def load_products():
-    with open("products.json", "r") as f:
-        products = json.load(f)
-    return products
+    try:
+        with open("products.json", "r") as f:
+            products = json.load(f)
+        return products
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="products.json file not found.")
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="products.json is not a valid JSON file.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error loading products: {str(e)}")
+
+cached_gold_price = None
+cache_time = 0
+CACHE_TTL = 10 #10 seconds to test ttl
 
 async def get_gold_price():
+    global cached_gold_price, cache_time
+    now = time.time()
     api_key = os.getenv("GOLD_API_KEY")
-    async with httpx.AsyncClient() as client:
-        response = await client.get("https://www.goldapi.io/api/XAU/USD", headers={"x-access-token": api_key})
-        response.raise_for_status()
-        data = response.json()
-        price = data['price_gram_24k']
-    return price
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GOLD_API_KEY environment variable not set.")
+    #if there isn't a cached value or the cached value is older than the ttl
+    if cached_gold_price is None or now - cache_time > CACHE_TTL:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get("https://www.goldapi.io/api/XAU/USD", headers={"x-access-token": api_key})
+                response.raise_for_status()
+                data = response.json()
+                cached_gold_price = data['price_gram_24k']
+                #update the cache time
+                cache_time = now
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=f"Error fetching gold price: {e.response.text}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error fetching gold price: {str(e)}")
+    # if the condition is met returns the new price if not
+    # returns the already cached price
+    return cached_gold_price
 
 def product_price(popularity_score: float, weight, gold_price) -> float:
     price = (popularity_score + 1) * weight * gold_price
     return price
 
-@app.get("/products")
-async def read_root():
-    products = load_products()
-    gold_price = await get_gold_price()
-    products_output = []
+def filter_products(
+        products, 
+        min_popularity: Union[float, int, None] = None, 
+        max_popularity: Union[float, int, None] = None,
+        min_price: Union[float, int, None] = None,
+        max_price: Union[float, int, None] = None,
+        ):
+    filtered = []
     for product in products:
-        popularity = product['popularityScore']
-        weight = product['weight']
-        priceUSD = product_price(popularity, weight, gold_price)
-        # Round to 2 decimals
-        product['price'] = round(priceUSD, 2)
-        products_output.append(product)
-    return products_output
+        if min_popularity is not None and product['popularityScore'] < min_popularity:
+            continue
+        if max_popularity is not None and product['popularityScore'] > max_popularity:
+            continue
+        if min_price is not None and product['price'] < min_price:
+            continue
+        if max_price is not None and product['price'] > max_price:
+            continue
+        filtered.append(product)
+    return filtered
+
+@app.get("/products")
+async def get_products(
+    min_popularity: Union[float, int, None] = None, 
+    max_popularity: Union[float, int, None] = None,
+    min_price: Union[float, int, None] = None,
+    max_price: Union[float, int, None] = None,
+):
+    try:
+        products = await asyncio.to_thread(load_products) # offloads the io operation to a new thread to not block the event loop
+    except Exception as e:
+        # load_products already raises HTTPException, but catch any unexpected error
+        raise HTTPException(status_code=500, detail=f"Error loading products: {str(e)}")
+    try:
+        gold_price = await get_gold_price()
+    except Exception as e:
+        # get_gold_price already raises HTTPException, but catch any unexpected error
+        raise HTTPException(status_code=500, detail=f"Error getting gold price: {str(e)}")
+    products_output = []
+    try:
+        for product in products:
+            popularity = product['popularityScore']
+            weight = product['weight']
+            priceUSD = product_price(popularity, weight, gold_price)
+            # Round to 2 decimals
+            product['price'] = round(priceUSD, 2)
+            products_output.append(product)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing products: {str(e)}")
+    return filter_products(products_output, min_popularity, max_popularity, min_price, max_price)
